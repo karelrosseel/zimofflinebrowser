@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Editor - JavaScript Canvas - Code Creativity!</title>
+<script>document.Blob = Blob; document.Window = Window;</script>
+
+<!-- these are extra libraries - they may or may not be needed -->
+<script src=https://zimjs.org/cdn/qrcode.js></script>
+<script src=https://zimjs.org/cdn/gifler.js></script>
+
+<script type="module">
+
+import zim_pizzazz from "https://zimjs.org/cdn/016/zim_pizzazz";
+const pizzazz = {makeShape, listShapes, makeIcon, listIcons, icons, makePattern, listPatterns};
+
+const scaling = FIT;
+const width = 1280;
+const height = 720;
+const color = light
+const outerColor = licorice
+const assets = [{id:'beach01', src:'beach01.jpg'}, {id:'bug01', src:'bug01.png'}, {id:'beach01', src:'beach01.jpg'}];
+const path = "https://zimjs.org/assets/";
+const sensors = true;
+
+new Frame({scaling, width, height, color, outerColor, ready, assets, path, sensors});
+function ready(frame, stage, stageW, stageH) { // parameters for backwards compatibility
+
+	//~ Included assets (see HELP above): 
+	//~ Backings: beach01
+	//~ Nature: bug01
+	new Pic("beach01").scaleTo().center()
+	new Blob({
+	    color:blue,
+	points: [[0,-40.7,0,0,-57.3,-76.6,41.8,-80.3,"free"],[52,17.7,0,0,94.5,-112.8,114.5,157.5,"free"],[0,100,0,0,-0.8,2.5,0.8,-2.5,"mirror"],[-52,16.9,0,0,-115.4,162,-89.3,-96.3,"free"]],
+	    showControls:false
+	}).sca(3).center().sha();
+	
+	new Squiggle({
+	    color:pink,
+	    points:[[151.7,114,0,0,-30,0,-9.2,2.3,"free"],[136.2,37.5,0,0,-6.2,-6.6,0.2,-0.3,"free"],[144.3,-39.1,0,0,4.8,31.1,-3.6,-23.4,"straight"],[121.3,-87.9,0,0,-2.4,17.7,2,-15,"straight"],[150.8,-42.2,0,0,-1.3,6.1,1.7,-8.1,"straight"],[187.3,-86,0,0,0.8,-20.1,-0.5,12.1,"straight"],[153.9,-37.8,0,0,0,0,0,0,"none"],[152.4,-32.7,0,0,0,0,0,0,"none"],[172.7,38.1,0,0,0.5,2.1,2.2,1.7,"free"],[154.2,111.3,0,0,9.6,-1.7,30,0,"free"]],
+	
+	    showControls:false
+	}).sca(3).center();
+	 new Pic("bug01").center().drag();
+
+
+} // end of ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optelsommen Spel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.5.1/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        input {
+            margin: 10px 0;
+            padding: 5px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>Optelsommen Spel</h1>
+        <div id="question"></div>
+        <input type="number" id="answer" placeholder="Jouw antwoord">
+        <button onclick="checkAnswer()">Controleer</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        let currentQuestion = 0;
+        let questions = [];
+        let correctAnswers = 0;
+
+        function generateQuestions() {
+            for (let i = 0; i < 10; i++) {
+                let num1 = Math.floor(Math.random() * 10) + 1;
+                let num2 = Math.floor(Math.random() * 10) + 1;
+                questions.push({
+                    question: `${num1} + ${num2} = ?`,
+                    answer: num1 + num2
+                });
+            }
+        }
+
+        function displayQuestion() {
+            document.getElementById('question').textContent = questions[currentQuestion].question;
+        }
+
+        function checkAnswer() {
+            let userAnswer = parseInt(document.getElementById('answer').value);
+            let correctAnswer = questions[currentQuestion].answer;
+
+            if (userAnswer === correctAnswer) {
+                correctAnswers++;
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    displayQuestion();
+                    document.getElementById('answer').value = '';
+                    document.getElementById('message').textContent = 'Goed gedaan! Volgende som.';
+                } else {
+                    if (correctAnswers === questions.length) {
+                        document.getElementById('message').textContent = 'Gefeliciteerd! Je hebt alle sommen goed beantwoord!';
+                        confetti({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { y: 0.6 }
+                        });
+                    } else {
+                        document.getElementById('message').textContent = `Je hebt ${correctAnswers} van de ${questions.length} sommen goed beantwoord.`;
+                    }
+                    document.getElementById('question').textContent = 'Spel afgelopen!';
+                    document.getElementById('answer').style.display = 'none';
+                    document.querySelector('button').style.display = 'none';
+                }
+            } else {
+                document.getElementById('message').textContent = 'Fout antwoord. Je moet opnieuw beginnen.';
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            currentQuestion = 0;
+            correctAnswers = 0;
+            questions = [];
+            generateQuestions();
+            displayQuestion();
+            document.getElementById('answer').value = '';
+        }
+
+        generateQuestions();
+        displayQuestion();
+    </script>
+</body>
+</html>

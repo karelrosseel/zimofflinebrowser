@@ -1,0 +1,295 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZIM OFFLINE editor</title>
+   <script src="./scripts/1.4.1/createjs.js"></script>
+   <script src="./scripts/017/zim_min.js"></script>
+    <!--<script src="./scripts/2.1.3/box2d.js"></script>-->
+    <!--<script src="./scripts/017/physics_2.3.js"></script>-->
+    <!--<script src="./scripts/017/game.js"></script>-->
+    <!--<script src="./scripts/017/three.js"></script> -->
+    <!--<script src="./scripts/017/pizzazz_01_module.js"></script>-->
+    <!--<script src="./scripts/017/pizzazz_02_module.js"></script>-->
+    <!--<script src="./scripts/017/pizzazz_03_module.js"></script>-->
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .save-btn {
+            background-color: #2563eb;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .save-btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .textarea {
+            width: 100%;
+            height: 400px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        #preview-container {
+            width:500px; !important; 
+            height:auto; !important
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+           
+	/*
+	just use 400px instead of 80% for a fixed width
+	*/
+        }
+
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">ZIM OFFLINE Editor 1280/2 and 720/2 (included) pizzazz 01 02 03 + box2D.js + physics.js + cam.js + game.js + three.js </div>
+            <button class="save-btn" onclick="handleDownload()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Save as HTML
+            </button>
+        </div>
+        <div class="editor-container">
+            <div class="editor-section">
+                <div class="section-title">Edit ZIM Code:</div>
+                <textarea 
+                    id="codeEditor" 
+                    class="textarea" 
+                    spellcheck="false" 
+                    oninput="debounce(updatePreview, 500)()"
+                > 
+    
+    
+   
+    // <script>
+    // dont' forget when you want to save to change parameters
+    // to FIT, 1280, 720 so it is the correct output
+   new Frame("preview-container",1280/2,720/2,white,black,ready);
+    function ready() {
+    
+        // Create a circle and make it draggable
+        const circle = new Circle(50, "blue")
+            .center()
+            .drag();
+
+        // Add some animation
+        circle.animate({
+            props: {scale: 2, rotation: 360},
+            time: 2,
+            loop: true
+        });
+        
+    }
+    // </script>
+</textarea>
+                <div id="errorDisplay" class="error"></div>
+            </div>
+            <div class="editor-section">
+                <div class="section-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Preview: (with offline link to zimjs.com/script tags)
+                </div>
+                <div id="preview-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFrame = null;
+
+        // Debounce function to prevent too frequent updates
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function clearPreviousFrame() {
+            if (currentFrame) {
+                currentFrame.dispose();
+                currentFrame = null;
+            }
+            const container = document.getElementById('preview-container');
+            container.innerHTML = '';
+        }
+
+        function updatePreview() {
+            const code = document.getElementById('codeEditor').value;
+            const errorDisplay = document.getElementById('errorDisplay');
+            const container = document.getElementById('preview-container');
+
+            // Clear previous canvas and error
+            clearPreviousFrame();
+            errorDisplay.textContent = '';
+
+            try {
+                // Create a canvas element
+                const canvas = document.createElement('canvas');
+                canvas.id = 'zimCanvas';
+                container.appendChild(canvas);
+
+                // Prepare the code
+                const zimCode = `
+                    try {
+                        ${code}
+                    } catch (e) {
+                        throw e;
+                    }
+                `;
+
+                // Execute the code
+                new Function('ready', zimCode)();
+               
+            } catch (error) {
+                errorDisplay.textContent = error.toString();
+                container.innerHTML = '<div style="color: red;">Preview failed. Check the error message below.</div>';
+            }
+        }
+
+        function handleDownload() {
+            const zimCode = document.getElementById('codeEditor').value;
+            
+            // Create element with download attribute
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ZIM Canvas</title>
+  
+    <!-- https://zimjs.org/cdn/ - JavaScript Canvas Framework -->
+
+    <script src="./scripts/1.4.1/createjs.js"><\/script>
+    <script src="./scripts/017/zim_min.js"><\/script>
+    <script src="./scripts/2.1.3/box2d.js"><\/script>
+    <script src="./scripts/017/physics_2.3.js"><\/script>
+    // <script src="./scripts/017/game.js"><\/script>
+    // <script src="./scripts/017/three.js"><\/script> 
+    // <script src="./scripts/017/pizzazz_01_module.js"><\/script>
+    // <script src="./scripts/017/pizzazz_02_module.js"><\/script>
+    // <script src="./scripts/017/pizzazz_03_module.js"><\/script>
+
+<script>
+
+//be sure you change it to FIT, 1280, 720 
+        ${zimCode}
+
+    <\/script>
+</body>
+</html>`));
+            
+            element.setAttribute('download', 'zim-canvas.html');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        // Initialize preview on page load
+        updatePreview();
+    </script>
+</body>
+</html>

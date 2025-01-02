@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Editor - JavaScript Canvas - Code Creativity!</title>
+<script>document.Blob = Blob; document.Window = Window;</script>
+
+<!-- these are extra libraries - they may or may not be needed -->
+<script src=https://zimjs.org/cdn/qrcode.js></script>
+<script src=https://zimjs.org/cdn/gifler.js></script>
+
+<script type="module">
+
+import zim from "https://zimjs.org/cdn/016/zim";
+
+const scaling = FIT;
+const width = 1280;
+const height = 720;
+const color = light
+const outerColor = licorice
+const assets = [{id:'flowers01', src:'flowers01.jpg'}, {id:'bug01', src:'bug01.png'}, {id:'flowers01', src:'flowers01.jpg'}];
+const path = "https://zimjs.org/assets/";
+const sensors = true;
+
+new Frame({scaling, width, height, color, outerColor, ready, assets, path, sensors});
+function ready(frame, stage, stageW, stageH) { // parameters for backwards compatibility
+
+	//~ Included assets (see HELP above): 
+	//~ Backings: flowers01
+	//~ Nature: bug01
+	new Pic("flowers01").scaleTo().center()
+	new Blob ({
+	    color: red,
+	points: [[0,-40.7,0,0,-31.3,-41.8,23.6,-45.4,"free"],[124.6,-40.7,0,0,-12.1,-29.3,9.3,22.6,"mirror"],[26.7,20.2,0,0,52.8,-5.9,43.2,37.3,"free"],[127.6,93.6,0,0,31.4,-84.6,51.2,39.8,"free"],[0.8,102.5,0,0,0,0,0,0,"none"],[-80.5,96.9,0,0,-62.6,39.4,-79.4,-44,"free"],[-18.3,21.9,0,0,-52.8,41.7,-52.1,-8.9,"free"],[-128.5,-40.6,0,0,-6.9,22.4,8.3,-26.9,"mirror"]],
+	showControls:false
+	}).sca(3).center().sha();
+	
+	new Squiggle ({
+	    color:green,
+	    points:[[117.2,78.5,0,0,0,0,0,0,"none"],[108.5,-38.2,0,0,0,0,0,0,"none"],[120,-65,0,0,-16,0,16,0],[117.8,78.4,0,0,0,0,0,0,"none"]],
+	
+	    showControls:false
+	}).sca(3).center()
+	new Pic("bug01").center().drag();
+
+
+} // end of ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Editor - JavaScript Canvas - Code Creativity!</title>
+<script>document.Blob = Blob; document.Window = Window;</script>
+
+<!-- these are extra libraries - they may or may not be needed -->
+<script src=https://zimjs.org/cdn/qrcode.js></script>
+<script src=https://zimjs.org/cdn/gifler.js></script>
+
+<script type="module">
+
+import zim from "https://zimjs.org/cdn/017/zim";
+
+const scaling = FIT;
+const width = 1024;
+const height = 768;
+const color = light
+const outerColor = licorice
+const assets = [{id:'house08', src:'house08.png'}, {id:'house08', src:'house08.png'}];
+const path = "https://zimjs.org/assets/";
+const sensors = true;
+
+new Frame({scaling, width, height, color, outerColor, ready, assets, path, sensors});
+function ready(frame, stage, stageW, stageH) { // parameters for backwards compatibility
+
+	//~ Included assets (see HELP above): 
+	//~ Things: house08
+	// Given F, S, W, H or frame, stage, stageW, stageH
+	 new Rectangle(stageW, stageH, frame.lightBlue).addTo();
+	
+	               var  problems = generateProblems();
+	                currentProblem = 0;
+	                correctAnswers = 0;
+	
+	               var  problemText = new Label({
+	                    text:"",
+	                    size:30,
+	                    color:dark
+	                }).pos(0, 100, CENTER, CENTER);
+	
+	                var messageText = new Label({
+	                    text:"",
+	                    size:20,
+	                    color:frame.red
+	                }).pos(0, 200, CENTER, CENTER);
+	
+	               var input = new TextInput({
+	                    size:20,
+	                    width:100,
+	                    placeholder:"Antwoord"
+	                }).pos(0, 300, CENTER);
+	
+	               var  button = new Button({
+	                    label:"Controleer",
+	                    width:120,
+	                    height:40,
+	                    backgroundColor:frame.blue,
+	                    rollBackgroundColor:frame.dark,
+	                    corner:0
+	                })
+	                    .pos(0, 350, CENTER)
+	                    .tap(checkAnswer);
+	
+	                input.on("keydown", (e) => {
+	                    if (e.keyCode == 13) checkAnswer();
+	                });
+	
+	                displayProblem();
+	
+	                stage.update();
+	            });
+	        }
+	
+	        function generateProblems() {
+	            const problems = [];
+	            for (let i = 0; i < 10; i++) {
+	                const num1 = Math.floor(Math.random() * 20) + 1;
+	                const num2 = Math.floor(Math.random() * 20) + 1;
+	                problems.push({ question: `${num1} + ${num2}`, answer: num1 + num2 });
+	            }
+	            return problems;
+	        }
+	
+	        function displayProblem() {
+	            problemText.text = `Vraag ${currentProblem + 1}: ${problems[currentProblem].question} = ?`;
+	        }
+	
+	        function checkAnswer() {
+	            const userAnswer = parseInt(input.text);
+	            const correctAnswer = problems[currentProblem].answer;
+	
+	            if (userAnswer === correctAnswer) {
+	                correctAnswers++;
+	                currentProblem++;
+	
+	                if (currentProblem < 10) {
+	                    displayProblem();
+	                    input.text = "";
+	                    messageText.text = 'Correct! Volgende vraag.';
+	                    messageText.color = frame.green;
+	                } else {
+	                    if (correctAnswers === 10) {
+	                        messageText.text = 'Gefeliciteerd! Je hebt alle sommen correct beantwoord!';
+	                        messageText.color = frame.green;
+	                        confetti({
+	                            particleCount: 100,
+	                            spread: 70,
+	                            origin: { y: 0.6 }
+	                        });
+	                    } else {
+	                        messageText.text = `Je hebt ${correctAnswers} van de 10 vragen goed beantwoord.`;
+	                        messageText.color = frame.blue;
+	                    }
+	                    problemText.text = 'Spel afgelopen!';
+	                    input.removeFrom();
+	                    button.removeFrom();
+	                }
+	            } else {
+	                messageText.text = 'Fout antwoord. Begin opnieuw.';
+	                messageText.color = frame.red;
+	                currentProblem = 0;
+	                correctAnswers = 0;
+	                problems = generateProblems();
+	                displayProblem();
+	                input.text = "";
+	            }
+	
+	            frame.stage.update();
+	        }
+	
+
+
+} // end of ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body>
+</body>
+</html>

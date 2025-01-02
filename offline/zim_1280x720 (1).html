@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Editor - JavaScript Canvas - Code Creativity!</title>
+<script>document.Blob = Blob; document.Window = Window;</script>
+
+<!-- these are extra libraries - they may or may not be needed -->
+<script src=https://zimjs.org/cdn/qrcode.js></script>
+<script src=https://zimjs.org/cdn/gifler.js></script>
+
+<script type="module">
+
+import zim from "https://zimjs.org/cdn/016/zim";
+
+const scaling = FIT;
+const width = 1280;
+const height = 720;
+const color = light
+const outerColor = licorice
+const assets = [{id:'flowers02', src:'flowers02.jpg'}, {id:'virushepatitisb', src:'virushepatitisb.png'}, {id:'flowers02', src:'flowers02.jpg'}];
+const path = "https://zimjs.org/assets/";
+const sensors = true;
+
+new Frame({scaling, width, height, color, outerColor, ready, assets, path, sensors});
+function ready(frame, stage, stageW, stageH) { // parameters for backwards compatibility
+
+	//~ Included assets (see HELP above): 
+	//~ Backings: flowers02
+	//~ Nature: virushepatitisb
+	new Pic("flowers02").scaleTo().center()
+	new Blob({
+	    color:red,
+	    points:[[-3.2,-56.5,0,0,-57.3,-76.6,41.8,-80.3,"free"],[83.2,-4.2,0,0,97.3,-120.1,113,124.3,"free"],[3.2,50.6,0,0,25.2,0,-25.2,0,"free"],[-80,2.1,0,0,-147,114.4,-144.6,-125,"free"]],
+	    showControls:false
+	}).sca(3).center().sha();
+	
+	new Squiggle({
+	    color:blue,
+	points:[[0,0,0,0,-30,0,30,0],[28.7,-53.6,0,0,-3.7,38.9,3.7,-38.9],[-5.6,-112.5,0,0,17.3,0,-17.3,0],[-27.4,-59.9,0,0,-1.6,-13.7,1.6,13.7],[0.3,0,0,0,-15.3,16.8,15.3,-16.8]],
+	   showControls:false
+	}).sca(3).center().mov(40)
+	new Pic("virushepatitisb").center().drag();
+
+
+} // end of ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Editor - JavaScript Canvas - Code Creativity!</title>
+<script>document.Blob = Blob; document.Window = Window;</script>
+
+<!-- these are extra libraries - they may or may not be needed -->
+<script src=https://zimjs.org/cdn/qrcode.js></script>
+<script src=https://zimjs.org/cdn/gifler.js></script>
+
+<script type="module">
+
+import zim from "https://zimjs.org/cdn/017/zim";
+
+const scaling = FIT;
+const width = 1280;
+const height = 720;
+const color = light
+const outerColor = licorice
+const assets = [{id:'city02', src:'city02.jpg'}, {id:'virus05', src:'virus05.png'}, {id:'butterfly', src:'butterfly.png'}, {id:'monkey', src:'monkey.png'}, {id:'spacer08', src:'spacer08.png'}];
+const path = "https://zimjs.org/assets/";
+const sensors = true;
+
+new Frame({scaling, width, height, color, outerColor, ready, assets, path, sensors});
+function ready(frame, stage, stageW, stageH) { // parameters for backwards compatibility
+
+	let currentQuestion = 0;
+	            let questions = [];
+	            let correctAnswers = 0;
+	
+	            function generateQuestions() {
+	                for (let i = 0; i < 10; i++) {
+	                    let num1 = Math.floor(Math.random() * 10) + 1;
+	                    let num2 = Math.floor(Math.random() * 10) + 1;
+	                    questions.push({
+	                        question: `${num1} + ${num2} = ?`,
+	                        answer: num1 + num2
+	                    });
+	                }
+	            }
+	
+	            generateQuestions();
+	
+	            const questionText = new Label({
+	                text: questions[currentQuestion].question,
+	                size: 40,
+	                color: "#333333"
+	            }).center();
+	
+	            const input = new TextInput({
+	                size: 30,
+	                width: 100,
+	                color: "#333333",
+	                backgroundColor: "#ffffff",
+	                borderColor: "#cccccc"
+	            }).pos(0, 50, CENTER, BOTTOM);
+	
+	            const submitButton = new Button({
+	                label: "Controleer",
+	                width: 120,
+	                height: 50,
+	                backgroundColor: "#4CAF50",
+	                rollBackgroundColor: "#45a049"
+	            }).pos(0, 120, CENTER, BOTTOM);
+	
+	            const messageText = new Label({
+	                text: "",
+	                size: 24,
+	                color: "#333333"
+	            }).pos(0, 180, CENTER, BOTTOM);
+	
+	            submitButton.on("click", checkAnswer);
+	
+	            function checkAnswer() {
+	                let userAnswer = parseInt(input.text);
+	                let correctAnswer = questions[currentQuestion].answer;
+	
+	                if (userAnswer === correctAnswer) {
+	                    correctAnswers++;
+	                    currentQuestion++;
+	                    if (currentQuestion < questions.length) {
+	                        questionText.text = questions[currentQuestion].question;
+	                        input.text = "";
+	                        messageText.text = "Goed gedaan! Volgende som.";
+	                    } else {
+	                        if (correctAnswers === questions.length) {
+	                            messageText.text = "Gefeliciteerd! Je hebt alle sommen goed beantwoord!";
+	                            new Emitter().spurt(500).center();
+	                            
+	                        } else {
+	                            messageText.text = `Je hebt ${correctAnswers} van de ${questions.length} sommen goed beantwoord.`;
+	                        }
+	                        questionText.text = "Spel afgelopen!";
+	                        input.removeFrom();
+	                        submitButton.removeFrom();
+	                    }
+	                } else {
+	                    messageText.text = "Fout antwoord. Je moet opnieuw beginnen.";
+	                    resetGame();
+	                }
+	            }
+	
+	            function resetGame() {
+	                currentQuestion = 0;
+	                correctAnswers = 0;
+	                questions = [];
+	                generateQuestions();
+	                questionText.text = questions[currentQuestion].question;
+	                input.text = "";
+	            }
+	
+	
+
+
+} // end of ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body>
+</body>
+</html>

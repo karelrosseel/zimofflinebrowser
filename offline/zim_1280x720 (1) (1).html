@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ZIM Editor - JavaScript Canvas - Code Creativity!</title>
+<script>document.Blob = Blob; document.Window = Window;</script>
+
+<!-- these are extra libraries - they may or may not be needed -->
+<script src=https://zimjs.org/cdn/qrcode.js></script>
+<script src=https://zimjs.org/cdn/gifler.js></script>
+
+<script type="module">
+
+import zim_pizzazz from "https://zimjs.org/cdn/016/zim_pizzazz";
+const pizzazz = {makeShape, listShapes, makeIcon, listIcons, icons, makePattern, listPatterns};
+
+const scaling = FIT;
+const width = 1280;
+const height = 720;
+const color = light
+const outerColor = licorice
+const assets = [{id:'beach02', src:'beach02.jpg'}, {id:'bug01', src:'bug01.png'}, {id:'beach02', src:'beach02.jpg'}];
+const path = "https://zimjs.org/assets/";
+const sensors = true;
+
+new Frame({scaling, width, height, color, outerColor, ready, assets, path, sensors});
+function ready(frame, stage, stageW, stageH) { // parameters for backwards compatibility
+
+	//~ Included assets (see HELP above): 
+	//~ Backings: beach02
+	//~ Nature: bug01
+	new Pic("beach02").scaleTo().center()
+	new Blob({ 
+	    color:pink,
+	    points:[[-1,-45.9,0,0,-57.3,-76.6,41.8,-80.3,"free"],[51.2,3.1,0,0,117.1,-94.2,92.5,138.8,"free"],[2.1,54.3,0,0,0,0,0,0,"none"],[-46,11.4,0,0,-79.8,138.5,-139.1,-93.9,"free"]],
+	    showControls:false 
+	}).sca(3).center().sha();
+	new Squiggle({
+	    color:blue,
+	   points:[[127.6,83,0,0,-30,0,30,0],[130,35.1,0,0,2.2,16.6,3.2,2.9,"free"],[134.3,-18,0,0,-3.9,28.3,2.2,-16.2,"straight"],[97.2,-94.9,0,0,29.9,60.7,-10.5,-6.9,"free"],[140,-42.2,0,0,-13.9,1.8,19.4,-2.5,"straight"],[171,-83.6,0,0,24.1,-22.9,9.6,9.4,"free"],[142.7,-36.3,0,0,-3,1.2,12.4,-24.9,"free"],[159.6,34.1,0,0,-10.3,-17.6,-12.5,39.4,"free"],[158.9,85.1,0,0,-30,0,30,0]], 
+	   showControls:false
+	}).sca(2.5).center().mov(0,-50)
+	
+	new Pic("bug01").center().drag();
+
+
+} // end of ready
+
+</script>
+<meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+<body>
+</body>
+</html>
