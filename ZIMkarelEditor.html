@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>JavaScript in de Klas - ZIM</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,900&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.14/lib/codemirror.min.css">
+  
+  <style>
+/* --- BASE STYLES --- */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: #23272e;
+  font-family: 'Roboto', Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  transition: background 0.25s, color 0.25s;
+}
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.topbar {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  border-bottom: 1.5px solid #eee;
+  padding: 0.8rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.main-layout {
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  background: #f3f5f8;
+}
+.editor-pane {
+  flex: 0 0 420px;
+  min-width: 220px;
+  max-width: none;
+  background: #f7f8fa;
+  border-radius: 18px 0 0 18px;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  transition: background 0.2s;
+  overflow: auto;
+}
+.canvas-pane {
+  flex: 1 1 0;
+  min-width: 220px;
+  background: #f7f8fa;
+  border-radius: 0 18px 18px 0;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  overflow: auto;
+}
+.editor-label,
+.console-label,
+.canvas-label {
+  font-weight: 900;
+  font-size: 1.14em;
+  color: #5200FF;
+  margin-bottom: 0.5rem;
+}
+#code-editor {
+  height: 320px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1.5px solid #5200FF;
+  background: #fff;
+}
+.run-btn {
+  background: #3dffd0;
+  color: #23272e;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 1.1em;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 0.7rem;
+  width: 140px;
+  align-self: flex-start;
+}
+.run-btn:hover {
+  background: #5ffff0;
+}
+#console-output {
+  background: #161820;
+  color: #fff;
+  min-height: 60px;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  font-family: monospace;
+  font-size: 1em;
+  white-space: pre-line;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.canvas-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+#coords {
+  font-family: monospace;
+  color: #23272e;
+  font-size: 1em;
+}
+#canvas-container {
+  background: #fff;
+  border: 2px solid #5200FF;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(82,0,255,0.08);
+  margin: 0 auto;
+  width: 640px;
+  height: 360px;
+  max-width: 90vw;
+  position: relative;
+}
+.help-btn {
+  position: fixed;
+  right: 32px;
+  bottom: 32px;
+  z-index: 1500;
+  background: #5200FF;
+  color: #fff;
+  font-size: 2em;
+  border: none;
+  border-radius: 50%;
+  width: 54px;
+  height: 54px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(82,0,255,0.11);
+}
+.help-btn:hover {
+  background: #3700b3;
+}
+.toolbar button {
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-size: 1em;
+  cursor: pointer;
+  font-weight: 700;
+  margin-left: 0.5rem;
+}
+#export-pdf {
+  background: #5200FF;
+  color: #fff;
+}
+#export-pdf:hover {
+  background: #3700b3;
+}
+#toggle-theme {
+  background: #5200FF;
+  color: #fff;
+}
+#toggle-theme:hover {
+  background: #3700b3;
+}
+.splitter {
+  width: 8px;
+  min-width: 8px;
+  cursor: col-resize;
+  background: linear-gradient(to right, #eee 0%, #ddd 100%);
+  z-index: 10;
+  transition: background 0.18s;
+  margin: 0;
+  border-radius: 7px;
+  height: 100%;
+}
+.splitter.dragging {
+  background: linear-gradient(to right, #b7b7ff 0%, #5200FF 100%);
+}
+body.dark {
+  background: #161820;
+  color: #fff;
+}
+body.dark .editor-pane,
+body.dark .canvas-pane {
+  background: #23272e;
+  color: #fff;
+}
+body.dark #code-editor {
+  background: #23272e;
+  color: #fff;
+}
+body.dark .topbar {
+  background: #23272e !important;
+  border-bottom: 1.5px solid #333;
+}
+body.dark .console-label,
+body.dark .editor-label,
+body.dark .canvas-label {
+  color: #fff !important;
+}
+body.dark #console-output {
+  background: #fff !important;
+  color: #23272e !important;
+}
+body.dark .main-layout {
+  background: #23272e;
+}
+body.dark #canvas-container {
+  background: #23272e;
+}
+@media (max-width: 980px) {
+  .main-layout {
+    flex-direction: column;
+    gap: 3.5rem;
+    max-width: 99vw;
+  }
+  .editor-pane,
+  .canvas-pane {
+    width: 98vw !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 1rem 0.5rem !important;
+  }
+  #canvas-container {
+    width: 95vw;
+    height: 300px;
+  }
+}
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="opdracht">
+      <strong>ZIM Oefening:</strong> <span id="opdracht-tekst">Schrijf ZIM code om objecten op het canvas te tonen.</span>
+    </div>
+    <div class="toolbar">
+      <button id="toggle-theme" title="Donkere/lichte modus">🌙 / ☀️</button>
+      <button id="export-pdf">Exporteren naar PDF</button>
+    </div>
+  </header>
+
+  <main class="main-layout" id="main-layout">
+    <section class="editor-pane" id="editor-pane">
+      <div class="editor-label">Code-editor</div>
+      <div id="code-editor"></div>
+      <br><br>
+      <button id="run-code" class="run-btn">▶️ Uitvoeren</button>
+      <br><br>
+      <div class="console-label">Console-uitvoer</div>
+      <br>
+      <div id="console-output"></div>
+    </section>
+
+    <div class="splitter" id="splitter"></div>
+
+    <section class="canvas-pane" id="canvas-pane">
+      <div class="canvas-header">
+        <span class="canvas-label">ZIM Canvas</span>
+        <span id="coords"></span>
+      </div>
+      <div id="canvas-container"></div>
+    </section>
+  </main>
+
+  <button id="help-btn" class="help-btn" title="Toon commando's">?</button>
+
+  <!-- Load ZIM Scripts -->
+  <script src="https://zimjs.org/cdn/1.4.1/createjs.js"></script>
+  <script src="https://zimjs.org/cdn/017/zim_min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.14/lib/codemirror.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.14/mode/javascript/javascript.min.js"></script>
+  
+  <script>
+    let codeEditor;
+    let consoleOutput;
+    let currentFrame = null;
+
+    // Wait for ZIM to load
+    function initApp() {
+      // Check if ZIM is loaded
+      if (typeof Frame === 'undefined') {
+        setTimeout(initApp, 100);
+        return;
+      }
+
+      consoleOutput = document.getElementById('console-output');
+
+      // Initialize CodeMirror
+      codeEditor = CodeMirror(document.getElementById('code-editor'), {
+        mode: "javascript",
+        lineNumbers: true,
+        theme: "default",
+        value: `// Maak een blauwe cirkel die draait
+const circle = new Circle(50, "blue")
+  .center()
+  .drag();
+
+circle.animate({
+  props: {scale: 2, rotation: 360},
+  time: 2,
+  loop: true
+});`
+      });
+
+      // Initialize ZIM Frame with welcome message
+      new Frame("canvas-container", 640, 360, yellow, black, function() {
+        currentFrame = this;
+        new Label("Druk op ▶️ om je code uit te voeren!", 40).center();
+      });
+
+      // Run button
+      document.getElementById('run-code').addEventListener('click', runUserCode);
+
+      // Theme toggle
+      document.getElementById('toggle-theme').addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+      });
+
+      // Export PDF (placeholder)
+      document.getElementById('export-pdf').addEventListener('click', () => {
+        alert('PDF export functionaliteit wordt binnenkort toegevoegd!');
+      });
+
+      // Help button (placeholder)
+      document.getElementById('help-btn').addEventListener('click', () => {
+        alert('Help functionaliteit wordt binnenkort toegevoegd!');
+      });
+
+      // Splitter logic
+      setupSplitter();
+    }
+
+    // Clear and dispose previous frame
+    function clearPreviousFrame() {
+      const container = document.getElementById('canvas-container');
+      container.innerHTML = '';
+      if (currentFrame) {
+        try {
+          if (typeof F !== 'undefined' && F.dispose) {
+            F.dispose();
+          }
+        } catch(e) {
+          console.log('Dispose error (ignored):', e.message);
+        }
+        currentFrame = null;
+      }
+    }
+
+    // Run user code
+    function runUserCode() {
+      const code = codeEditor.getValue();
+      consoleOutput.innerHTML = '';
+
+      clearPreviousFrame();
+
+      try {
+        // Redirect console.log
+        const originalLog = console.log;
+        console.log = function(message) {
+          consoleOutput.innerHTML += message + '\n';
+          originalLog(message);
+        };
+
+        // Create new Frame and execute user code
+        new Frame("canvas-container", 640, 360, yellow, black, function() {
+          currentFrame = this;
+          try {
+            // Execute user code in the Frame context
+            const userFunc = new Function(code);
+            userFunc.call(this);
+          } catch (error) {
+            console.log('ERROR: ' + error.message);
+          }
+        });
+
+        // Restore console.log after a brief delay
+        setTimeout(() => {
+          console.log = originalLog;
+        }, 100);
+
+      } catch (error) {
+        consoleOutput.innerHTML += 'ERROR: ' + error.message + '\n';
+      }
+    }
+
+    // Setup splitter functionality
+    function setupSplitter() {
+      let dragging = false;
+      const splitter = document.getElementById('splitter');
+      const editorPane = document.getElementById('editor-pane');
+      const canvasPane = document.getElementById('canvas-pane');
+
+      splitter.addEventListener('mousedown', function(e) {
+        dragging = true;
+        splitter.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+      });
+
+      document.addEventListener('mouseup', function(e) {
+        if (dragging) {
+          dragging = false;
+          splitter.classList.remove('dragging');
+          document.body.style.cursor = 'default';
+        }
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (dragging) {
+          const mainLayout = document.getElementById('main-layout');
+          const containerRect = mainLayout.getBoundingClientRect();
+          let newEditorWidth = e.clientX - containerRect.left;
+          
+          newEditorWidth = Math.min(Math.max(newEditorWidth, 220), containerRect.width - 300);
+
+          editorPane.style.flex = `0 0 ${newEditorWidth}px`;
+          canvasPane.style.flex = '1 1 0';
+        }
+      });
+    }
+
+    // Start when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>
