@@ -1,0 +1,842 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8" />
+    <title>JavaScript in de Klas - ZIM</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,900&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.14/lib/codemirror.min.css">
+    <style>
+/* --- BASE STYLES --- */
+html, body { height: 100%; margin: 0; padding: 0; background: #fff; color: #23272e; font-family: 'Roboto', Arial, Helvetica, sans-serif; min-height: 100vh; transition: background 0.25s, color 0.25s;}
+body { display: flex; flex-direction: column; min-height: 100vh;}
+.topbar { width: 100%; box-sizing: border-box; background: #fff; border-bottom: 1.5px solid #eee; padding: 0.8rem 2rem; display: flex; justify-content: space-between; align-items: center;}
+
+/* Default Layout: Horizontal (Side-by-Side) */
+.main-layout { 
+    display: flex; 
+    flex-direction: row; /* Default: Editor | Canvas */
+    width: 100vw; 
+    height: 100vh; 
+    min-height: 0; 
+    overflow: hidden; 
+    background: #f3f5f8;
+}
+
+/* NEW Layout: Vertical (Stacked) */
+.main-layout-vertical {
+    flex-direction: column !important;
+    height: calc(100vh - 54px); /* Subtract topbar height */
+}
+
+/* Class to switch the position of the two main panes (editor and canvas) */
+.main-layout-reversed {
+    flex-direction: row-reverse !important;
+}
+.editor-pane { 
+    flex: 0 0 420px; /* Default width in row mode */
+    min-width: 220px; 
+    max-width: none; 
+    background: #f7f8fa; 
+    border-radius: 18px 0 0 18px; 
+    padding: 1.5rem; 
+    box-sizing: border-box; 
+    transition: background 0.2s; 
+    overflow: auto;
+}
+.canvas-pane { 
+    flex: 1 1 0; /* Takes remaining space in row mode */
+    min-width: 220px; 
+    background: #f7f8fa; 
+    border-radius: 0 18px 18px 0; 
+    padding: 1.5rem; 
+    box-sizing: border-box; 
+    overflow: hidden; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+/* Vertical Layout Specific Overrides */
+.main-layout-vertical .editor-pane {
+    flex: 0 0 40vh; /* Editor height fixed to 40% viewport height */
+    min-height: 200px;
+    max-height: 80vh;
+    min-width: auto; /* Reset min-width */
+    width: 100%; /* Spans full width */
+    border-radius: 18px 18px 0 0; /* Top corners rounded */
+}
+
+.main-layout-vertical .canvas-pane {
+    flex: 1 1 auto; 
+    width: 100%; /* Spans full width */
+    border-radius: 0 0 18px 18px; /* Bottom corners rounded */
+}
+
+/* Custom classes to manage visibility */
+.hidden-pane { display: none !important;}
+.hidden-editor-pane { display: none !important;}
+.splitter.hidden-editor-pane { display: none !important; }
+
+.editor-label,.console-label,.canvas-label { font-weight: 900; font-size: 1.14em; color: #5200FF; margin-bottom: 0.5rem;}
+#code-editor { 
+    height: 350px; /* Default height in horizontal mode */
+    border-radius: 8px; 
+    overflow: hidden; 
+    border: 1.5px solid #5200FF; 
+    background: #fff; 
+    position: relative; 
+}
+
+/* Dynamic height adjustment for CodeMirror in Vertical Layout */
+.main-layout-vertical #code-editor {
+    flex-grow: 1; 
+    height: 90%; 
+    min-height: 250px;
+}
+
+/* ADDED: Resize Triangle Indicator */
+#code-editor::after { content: ' '; position: absolute; bottom: 0; right: 0; width: 0; height: 0; border-bottom: 12px solid #5200FF; border-left: 12px solid transparent; cursor: se-resize; z-index: 5;}
+.run-btn { background: #3dffd0; color: #23272e; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-size: 1.1em; font-weight: 700; cursor: pointer; margin-bottom: 0.7rem; width: 140px; align-self: flex-start;}
+.run-btn:hover { background: #5ffff0;}
+#console-output { background: #161820; color: #fff; min-height: 60px; border-radius: 8px; padding: 0.65rem 1rem; font-family: monospace; font-size: 1em; white-space: pre-line; box-shadow: 0 1px 4px rgba(0,0,0,0.08);}
+.canvas-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-shrink: 0;}
+#coords { font-family: monospace; color: #23272e; font-size: 1em;}
+
+/* ---------------------- NEW FLEX LAYOUT FOR ASSETS/CANVAS ---------------------- */
+#assets-wrapper { flex-grow: 1; min-height: 0; overflow: hidden; display: none; border: 2px solid #5200FF; border-radius: 12px; display: flex; flex-direction: column;}
+.assets-header { padding: 0.5rem 1rem; background: #fff; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+.assets-header.dark { background: #23272e; border-bottom: 1px solid #333;}
+.asset-title { font-weight: 700; color: #5200FF;}
+.dark .asset-title { color: #fff;}
+.close-iframe-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #5200FF; line-height: 1; padding: 0; transition: color 0.1s;}
+.close-iframe-btn:hover { color: #cc0000; transform: scale(1.1);}
+#assets-iframe { width: 100%; height: 100%; border: none; overflow-y: scroll; background: #fff; flex-grow: 1; }
+.asset-title.default-color { color: #5200FF;}
+.asset-title.demo-color { color: #0088AA;}
+.horizontal-splitter { width: 100%; height: 8px; cursor: row-resize; background: linear-gradient(to bottom, #eee 0%, #ddd 100%); z-index: 10; transition: background 0.18s; margin: 5px 0; border-radius: 7px; flex-shrink: 0; display: none; }
+#canvas-container-wrapper { flex-grow: 1; min-height: 0; display: flex; justify-content: center; align-items: center; background: #f7f8fa;}
+.hide-canvas-wrapper { display: none !important; }
+#canvas-container { width: 1280px; height: 720px; max-width: 100%; max-height: 100%; background: #fff; border: 10px solid #000000; border-radius: 12px; box-shadow: 0 2px 12px rgba(82,0,255,0.08); position: relative;}
+#canvas-container-wrapper:fullscreen { width: 100vw; height: 100vh; background: #000; margin: 0; padding: 0; border-radius: 0; }
+
+/* ---------------------- SPLITTER STYLES ---------------------- */
+.splitter { background: linear-gradient(to right, #eee 0%, #ddd 100%); z-index: 10; transition: background 0.18s; border-radius: 7px;}
+.splitter.dragging { background: linear-gradient(to right, #b7b7ff 0%, #5200FF 100%);}
+.splitter.horizontal { height: 8px; width: 100%; cursor: row-resize; margin: 6px 0; background: linear-gradient(to bottom, #eee 0%, #ddd 100%);}
+.splitter.vertical { width: 8px; min-width: 8px; cursor: col-resize; height: 100%;}
+.splitter.horizontal.dragging { background: linear-gradient(to bottom, #b7b7ff 0%, #5200FF 100%);}
+.splitter.vertical.dragging { background: linear-gradient(to right, #b7b7ff 0%, #5200FF 100%);}
+
+/* ---------------------- DARK MODE ---------------------- */
+body.dark { background: #161820; color: #fff;}
+body.dark .editor-pane,body.dark .canvas-pane { background: #23272e; color: #fff;}
+body.dark #code-editor { background: #23272e; color: #fff;}
+body.dark .topbar { background: #23272e !important; border-bottom: 1.5px solid #333;}
+body.dark .console-label,body.dark .editor-label,body.dark .canvas-label { color: #fff !important;}
+body.dark #console-output { background: #fff !important; color: #23272e !important;}
+body.dark .main-layout { background: #23272e;}
+body.dark #canvas-container { background: #23272e;}
+.attribution-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; border: 4px solid #5200FF; border-radius: 12px; padding: 2rem; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25); z-index: 2000; max-width: 400px; text-align: center; font-size: 1.1em; display: none;}
+.attribution-message p { margin-bottom: 1.5rem;}
+#close-attribution-message { background: #5200FF; color: #fff; border: none; border-radius: 6px; padding: 0.5rem 1.5rem; font-size: 1em; font-weight: 700; cursor: pointer;}
+#close-attribution-message:hover { background: #3700b3;}
+@media (max-width: 980px) {
+    .main-layout:not(.main-layout-vertical) {
+        flex-direction: column;
+        gap: 1rem;
+        max-width: 99vw;
+    }
+    .editor-pane, .canvas-pane {
+        width: 98vw !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        padding: 1rem 0.5rem !important;
+        height: 50vh;
+     }
+    .canvas-pane { height: 80vh; }
+    .splitter.vertical { display: none; }
+    #canvas-container { width: 95vw; height: 300px; }
+}
+</style>
+</head>
+<body class="main-body">
+    <header class="topbar">
+        <div class="opdracht">
+            <strong>ZIMjs.org/kids/slate:</strong> <span id="opdracht-tekst">maakt webapps</span>
+        </div>
+        <div class="toolbar">
+            <button id="toggle-theme" title="Donkere/lichte modus">🌙 / ☀️</button>
+            <button id="export-pdf">📄 HTML</button>
+
+            <button id="toggle-layout" title="Wissel Tussen Horizontale en Verticale Layout">↔️ / ↕️</button>
+
+            <button id="switch-panes" title="Wissel de Editor en Canvas posities">↔️ Wissel</button>
+
+            
+
+            <button id="zim-demo-emoji" class="zim-demo-btn" title="ZIM Emoji Demo">😀 Emoji</button>
+            <button id="zim-demo-paths" class="zim-demo-btn" title="ZIM Paths Demo">〰️ Paths</button>
+            <button id="zim-demo-emitter" class="zim-demo-btn" title="ZIM Emitter Demo">✨ Emitter</button>
+            
+
+           
+            <button id="toggle-assets" title="Toon/verberg Assets Browser">🖼️ Assets</button>
+            
+             <button id="toggle-spells" title="Toon de ZIM Spells documentatie">CODES</button>
+             
+             <button id="bot-btn" title="Open BOT demo in Assets Pane">AI</button>
+             <button id="toggle-editor" title="Verberg/toon de Code Editor">TOON</button>
+            <button id="fullscreen-canvas" title="Toon de Canvas in volledig scherm mode">MAX</button>
+            <button id="toggle-canvas" title="Verberg/toon het ZIM SLATE (tablet/phone/scherm)">X</button>
+        </div>
+    </header>
+    <main class="main-layout" id="main-layout" role="main">
+        <section class="editor-pane" id="editor-pane">
+            <div class="editor-label">Code-editor</div>
+            <div id="code-editor" style="display:flex;flex-direction:column;"></div>
+            <br><br>
+            <button id="run-code" class="run-btn">▶️ Uitvoeren</button>
+            <br><br>
+            <div class="console-label">Console-uitvoer</div>
+            <br>
+            <div id="console-output" aria-live="polite"></div>
+        </section>
+
+        <!-- Main splitter between editor and canvas - orientation toggled by JS -->
+        <div id="splitter" class="splitter vertical" role="separator" aria-orientation="vertical" aria-label="Resize editor and canvas"></div>
+
+        <section class="canvas-pane" id="canvas-pane">
+            <div class="canvas-header">
+                <span class="canvas-label">ZIM Canvas</span>
+                <span id="coords"></span>
+            </div>
+
+            <!-- ASSETS / DEMO PANE: iframe created lazily (no iframe at startup) -->
+            <div id="assets-wrapper" aria-hidden="true">
+                <header id="assets-header" class="assets-header" style="display:none;">
+                    <span id="asset-title" class="asset-title default-color">Assets Browser</span>
+                    <div>
+                        <button id="open-in-new-window" class="close-iframe-btn" title="Open in new window">⤢</button>
+                        <button id="close-assets-iframe" class="close-iframe-btn" aria-label="Sluit Demo/Assets Pane">&times;</button>
+                    </div>
+                </header>
+                <!-- iframe will be appended here when needed -->
+            </div>
+
+            <div id="canvas-splitter" class="splitter horizontal" role="separator" aria-orientation="horizontal" aria-label="Resize assets and canvas" style="display:none"></div>
+
+            <div id="canvas-container-wrapper">
+                <div id="canvas-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <button id="help-btn" class="help-btn" title="Toon commando's">?</button>
+    <div id="attribution-message" class="attribution-message">
+        <p id="attribution-text">Gemaakt door Karel Rosseel dankzij basis javascript lessen en editor Robbe Wulgaert project op github</p>
+        <button id="close-attribution-message">OK</button>
+    </div>
+
+    <script src="https://zimjs.org/cdn/1.4.1/createjs.js"></script>
+    <script src="https://zimjs.org/cdn/017/zim_min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.14/lib/codemirror.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.14/mode/javascript/javascript.min.js"></script>
+
+    <script>
+        /* Keys / State */
+        let codeEditor;
+        let consoleOutput;
+        let currentFrame = null;
+        let assetsVisible = false;
+        let isVerticalLayout = false;
+
+        const canvasContainer = document.getElementById('canvas-container');
+
+        // URLs
+        const DEFAULT_ASSETS_URL = "https://zimjs.org/assets/assets_backings.html";
+        const ZIM_SPELLS_URL = "https://zimjs.org/spells.html?item=Frame";
+        const ZIM_EMOJI_URL = "https://zimjs.com/emoji";
+        const ZIM_PATHS_URL = "https://zimjs.com/paths";
+        const ZIM_EMITTER_URL = "https://zimjs.com/016/emitter";
+        const ZIM_BOT_URL = "https://zimjs.com/bot";
+        const ZIM_HELP_URL = "https://zimjs.com/slate/help.html";
+
+        function initApp() {
+            if (typeof Frame === 'undefined') {
+                setTimeout(initApp, 100);
+                return;
+            }
+
+            consoleOutput = document.getElementById('console-output');
+
+            const codeEditorElement = document.getElementById('code-editor');
+            if (codeEditorElement) {
+                codeEditor = CodeMirror(codeEditorElement, {
+                    mode: "javascript",
+                    lineNumbers: true,
+                    theme: "default",
+                    value: `// Maak een blauwe cirkel die draait
+const circle = new Circle(50, "blue")
+    .center()
+    .drag();
+
+circle.animate({
+    props: {scale: 2, rotation: 360},
+    time: 2,
+    loop: true
+});
+
+zog("Test ZIM zog() output!");`
+                });
+                codeEditorElement.style.flexGrow = 1;
+                codeEditorElement.style.height = 'auto';
+            }
+
+            if (canvasContainer) {
+                new Frame("canvas-container", 1280, 720, yellow, black, function() {
+                    currentFrame = this;
+                    new Label("Druk op ▶️ om je code uit te voeren!", 40).center();
+                });
+            }
+
+// Close Iframe Button - *** MODIFIED: Restore canvas output when closing assets ***
+            const closeIframeBtn = document.getElementById('close-assets-iframe');
+            if (closeIframeBtn) closeIframeBtn.addEventListener('click', () => {
+                closeAssetsIframe();
+                toggleCanvasContainer(true); // Show the ZIM canvas output again
+            });
+            
+            
+            
+            // Wire up controls
+            document.getElementById('run-code').addEventListener('click', runUserCode);
+            document.getElementById('toggle-theme').addEventListener('click', toggleTheme);
+            document.getElementById('export-pdf').addEventListener('click', handleDownload);
+            document.getElementById('toggle-layout').addEventListener('click', toggleLayoutDirection);
+            document.getElementById('switch-panes').addEventListener('click', switchPanePosition);
+            document.getElementById('toggle-editor').addEventListener('click', toggleEditorVisibility);
+            document.getElementById('toggle-canvas').addEventListener('click', toggleCanvasVisibility);
+            document.getElementById('fullscreen-canvas').addEventListener('click', toggleCanvasFullscreen);
+            document.getElementById('toggle-assets').addEventListener('click', () => toggleAssets());
+           document.getElementById('toggle-spells').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_SPELLS_URL, 'ZIM Spells Dokumentatie', 'default-color');});
+           document.getElementById('help-btn').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_HELP_URL, '_blank', 'noopener');});
+            
+              // Demo/help open into iframe (canvas-pane)
+      document.getElementById('toggle-assets').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, DEFAULT_ASSETS_URL, 'ZIM Assets', 'demo-color'); });
+
+      document.getElementById('zim-demo-emoji').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_EMOJI_URL, 'ZIM Emoji', 'demo-color'); });
+      document.getElementById('zim-demo-paths').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_PATHS_URL, 'ZIM Paths', 'demo-color'); });
+      document.getElementById('zim-demo-emitter').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_EMITTER_URL, 'ZIM Emitter', 'demo-color'); });
+      document.getElementById('bot-btn').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_BOT_URL, 'ZIM BOT Demo', 'demo-color'); });
+
+      //// HELP word-button into iframe
+    //   document.getElementById('help-word-btn').addEventListener('click', () => { toggleCanvasContainer(false); toggleAssets(true, ZIM_HELP_EDITOR_URL, 'ZIMjs/kids/help_editor.html', 'demo-color'); });
+      
+
+    //   // Right menu opens assets
+    //   document.getElementById('menu-right').addEventListener('click', () => toggleAssets(true, DEFAULT_ASSETS_URL, 'Assets Browser', 'default-color'));
+
+    //   // assets header controls
+    //   document.getElementById('close-assets-iframe').addEventListener('click', () => { closeAssetsIframe(); toggleCanvasContainer(true); });
+    //   document.getElementById('open-in-new-window').addEventListener('click', () => { const iframe = document.getElementById('assets-iframe'); if (iframe && iframe.src) window.open(iframe.src, '_blank', 'noopener'); });
+
+
+
+
+            document.getElementById('close-attribution-message').addEventListener('click', hideAttributionMessage);
+
+            // assets header buttons (created lazily) - add handlers when header appears
+            document.getElementById('open-in-new-window').addEventListener('click', openAssetsInWindow);
+
+            // fullscreen change
+            document.addEventListener('fullscreenchange', onFullScreenChange);
+
+            // setup splitters once
+            setupMainSplitter();
+            setupAssetsSplitter();
+            setupCodeEditorResizing();
+
+            // initial: no iframe created, assets hidden
+            toggleAssets(false, null);
+            updatePaneBorders();
+        }
+
+        /* EXPORT */
+        function handleDownload() {
+            if (!codeEditor) return;
+            const zimCode = codeEditor.getValue();
+            const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+    <title>ZIM Canvas</title>
+    <script src="https://zimjs.org/cdn/1.4.1/createjs.js"><\/script>
+    <script src="https://zimjs.org/cdn/017/zim_min.js"><\/script>
+</head>
+<body>
+<script>
+new Frame(FIT, 1280, 720, yellow, black, ready);
+function ready() {
+${zimCode}
+}
+<\/script>
+</body>
+</html>`;
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(htmlContent));
+            element.setAttribute('download', 'zim-canvas.html');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            showAttributionMessage('HTML bestand gedownload! Open het bestand in je browser.');
+        }
+
+        /* FULLSCREEN */
+        function toggleCanvasFullscreen() {
+            const wrapper = document.getElementById('canvas-container-wrapper');
+            if (!wrapper) return;
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(err => showAttributionMessage('Fout bij verlaten van volledig scherm: ' + err.message));
+            } else {
+                wrapper.requestFullscreen().catch(err => showAttributionMessage('Kan niet naar volledig scherm gaan. Fout: ' + err.message));
+            }
+        }
+        
+        
+         /* Toggles the visibility of the ZIM Canvas wrapper (the bottom half of the right pane).
+         * @param {boolean} show - True to show the canvas container, false to hide it.
+         */
+        function toggleCanvasContainer(show) {
+            const canvasWrapper = document.getElementById('canvas-container-wrapper');
+            if (!canvasWrapper) return;
+            
+            if (show) {
+                canvasWrapper.classList.remove('hide-canvas-wrapper');
+            } else {
+                canvasWrapper.classList.add('hide-canvas-wrapper');
+            }
+        }
+        
+        function onFullScreenChange() {
+            const button = document.getElementById('fullscreen-canvas');
+            if (!button) return;
+            button.textContent = document.fullscreenElement ? '❌' : 'FULL'        }
+        
+       
+
+
+        /* LAYOUT TOGGLING */
+        function toggleLayoutDirection() {
+            const mainLayout = document.getElementById('main-layout');
+            const editorPane = document.getElementById('editor-pane');
+            const splitter = document.getElementById('splitter');
+            if (!mainLayout || !editorPane || !splitter) return;
+
+            isVerticalLayout = !isVerticalLayout;
+            mainLayout.classList.toggle('main-layout-vertical', isVerticalLayout);
+
+            // swap splitter orientation and attributes
+            if (isVerticalLayout) {
+                splitter.classList.remove('vertical');
+                splitter.classList.add('horizontal');
+                splitter.setAttribute('aria-orientation', 'horizontal');
+            } else {
+                splitter.classList.remove('horizontal');
+                splitter.classList.add('vertical');
+                splitter.setAttribute('aria-orientation', 'vertical');
+            }
+
+            // keep splitter visible when panes are visible
+            const editorHidden = editorPane.classList.contains('hidden-editor-pane');
+            document.getElementById('splitter').style.display = editorHidden ? 'none' : 'block';
+
+            // Update editor flex defaults
+            if (isVerticalLayout) {
+                editorPane.style.flex = '0 0 40vh';
+            } else {
+                editorPane.style.flex = editorPane.classList.contains('hidden-editor-pane') ? '' : '0 0 420px';
+            }
+
+            updatePaneBorders();
+            if (codeEditor) codeEditor.refresh();
+        }
+
+        function toggleCanvasVisibility() {
+            const canvasWrapper = document.getElementById('canvas-container-wrapper');
+            const canvasSplitter = document.getElementById('canvas-splitter');
+            const button = document.getElementById('toggle-canvas');
+            if (!canvasWrapper || !button) return;
+            const hidden = canvasWrapper.classList.contains('hide-canvas-wrapper');
+
+            if (hidden) {
+                canvasWrapper.classList.remove('hide-canvas-wrapper');
+                canvasWrapper.style.display = 'flex';
+                button.textContent = 'X';
+                // button.style.background = '#FF5722';
+                if (assetsVisible && document.getElementById('assets-wrapper')) canvasSplitter.style.display = 'block';
+            } else {
+                canvasWrapper.classList.add('hide-canvas-wrapper');
+                canvasWrapper.style.display = 'none';
+                button.textContent = 'SLATE';
+                // button.style.background = '#4CAF50';
+                if (canvasSplitter) canvasSplitter.style.display = 'none';
+            }
+        }
+
+        function toggleEditorVisibility() {
+            const editorPane = document.getElementById('editor-pane');
+            const splitter = document.getElementById('splitter');
+            const canvasPane = document.getElementById('canvas-pane');
+            const button = document.getElementById('toggle-editor');
+            if (!editorPane || !splitter || !canvasPane || !button) return;
+
+            const visible = !editorPane.classList.contains('hidden-editor-pane');
+            if (visible) {
+                editorPane.classList.add('hidden-editor-pane');
+                splitter.style.display = 'none';
+                canvasPane.style.borderRadius = '18px';
+                button.textContent = 'TYP';
+                // button.style.background = '#4CAF50';
+            } else {
+                editorPane.classList.remove('hidden-editor-pane');
+                // show splitter if canvas also visible
+                const canvasHidden = document.getElementById('canvas-container-wrapper').classList.contains('hide-canvas-wrapper');
+                if (!canvasHidden) splitter.style.display = 'block';
+                button.textContent = 'TOON';
+                // button.style.background = '#008080';
+                updatePaneBorders();
+                if (codeEditor) codeEditor.refresh();
+            }
+        }
+
+        function switchPanePosition() {
+            if (isVerticalLayout) return;
+            const mainLayout = document.getElementById('main-layout');
+            mainLayout.classList.toggle('main-layout-reversed');
+            updatePaneBorders();
+            if (codeEditor) codeEditor.refresh();
+        }
+
+        /* ASSETS (lazy iframe creation) */
+        function toggleAssets(forceShow, url, title, titleClass) {
+            const assetsWrapper = document.getElementById('assets-wrapper');
+            const assetsHeader = document.getElementById('assets-header');
+            const canvasSplitter = document.getElementById('canvas-splitter');
+            const canvasWrapper = document.getElementById('canvas-container-wrapper');
+            if (!assetsWrapper || !assetsHeader) return;
+
+            const newState = (typeof forceShow === 'boolean') ? forceShow : !assetsVisible;
+            assetsVisible = newState;
+
+            if (assetsVisible) {
+                // create header if not visible
+                assetsHeader.style.display = 'flex';
+                document.getElementById('asset-title').textContent = title || 'Assets Browser';
+                document.getElementById('asset-title').className = 'asset-title ' + (titleClass || 'default-color');
+
+                // create iframe lazily
+                let iframe = document.getElementById('assets-iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'assets-iframe';
+                    iframe.style.width = '100%';
+                    iframe.style.border = 'none';
+                    iframe.style.flexGrow = '1';
+                    iframe.style.background = '#fff';
+                    // sandbox for safer loading (allows scripts/forms/popups)
+                    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-popups');
+                    assetsWrapper.appendChild(iframe);
+                }
+                if (url) iframe.src = url;
+                assetsWrapper.style.display = 'flex';
+                assetsWrapper.setAttribute('aria-hidden', 'false');
+
+                const isCanvasVisible = !(canvasWrapper.classList.contains('hide-canvas-wrapper') || canvasWrapper.style.display === 'none');
+                if (isCanvasVisible) {
+                    canvasSplitter.style.display = 'block';
+                    // set default height if not set
+                    if (!assetsWrapper.style.height || assetsWrapper.style.height === '0px') {
+                        const canvasPaneHeight = document.getElementById('canvas-pane').clientHeight;
+                        assetsWrapper.style.height = `${Math.max(160, canvasPaneHeight / 2)}px`;
+                    }
+                } else {
+                    canvasSplitter.style.display = 'none';
+                    assetsWrapper.style.height = '100%';
+                }
+            } else {
+                // remove iframe to avoid initial load next time
+                const iframe = document.getElementById('assets-iframe');
+                if (iframe) {
+                    try { iframe.src = 'about:blank'; } catch(e) {}
+                    iframe.remove();
+                }
+                assetsWrapper.style.display = 'none';
+                assetsWrapper.style.height = '0px';
+                assetsHeader.style.display = 'none';
+                assetsWrapper.setAttribute('aria-hidden', 'true');
+                canvasSplitter.style.display = 'none';
+            }
+        }
+
+        function openDemoInAssets(url, title, titleClass) {
+            toggleAssets(true, url, title, titleClass);
+            const assetsWrapper = document.getElementById('assets-wrapper');
+            if (assetsWrapper) assetsWrapper.style.display = 'flex';
+        }
+
+        function closeAssetsIframe() { toggleAssets(false, null); }
+
+        function openAssetsInWindow() {
+            const iframe = document.getElementById('assets-iframe');
+            if (!iframe) return;
+            const url = iframe.src || DEFAULT_ASSETS_URL;
+            window.open(url, '_blank', 'noopener');
+        }
+
+        /* CONSOLE / ATTRIBUTION / THEME */
+        function showAttributionMessage(message) {
+            const attributionBox = document.getElementById('attribution-message');
+            const textElement = document.getElementById('attribution-text');
+            if (textElement) textElement.textContent = message;
+            if (attributionBox) attributionBox.style.display = 'block';
+        }
+        function hideAttributionMessage() {
+            const attributionBox = document.getElementById('attribution-message');
+            if (attributionBox) attributionBox.style.display = 'none';
+        }
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const assetsHeader = document.getElementById('assets-header');
+            if (assetsHeader) assetsHeader.classList.toggle('dark');
+        }
+
+        /* ZIM frame / run code helpers */
+        function clearPreviousFrame() {
+            const oldCanvas = canvasContainer ? canvasContainer.querySelector('canvas') : null; 
+            if (oldCanvas) canvasContainer.removeChild(oldCanvas);
+
+            if (currentFrame) {
+                try {
+                    if (typeof F !== 'undefined' && F.dispose) F.dispose();
+                } catch(e) {
+                    console.log('Dispose error (ignored):', e.message);
+                }
+                currentFrame = null;
+            }
+        }
+
+        function runUserCode() {
+            if (!codeEditor || !consoleOutput) return;
+
+            // ensure canvas visible when running user code
+            const canvasWrapper = document.getElementById('canvas-container-wrapper');
+            if (canvasWrapper) {
+                canvasWrapper.style.display = 'flex';
+                canvasWrapper.classList.remove('hide-canvas-wrapper');
+            }
+            // hide assets pane to avoid overlap
+            toggleAssets(false, null);
+
+            const code = codeEditor.getValue();
+            consoleOutput.textContent = '';
+            clearPreviousFrame();
+
+            try {
+                const originalLog = console.log;
+                const originalZog = window.zog;
+
+                const customLogger = function() {
+                    const outputMessage = Array.from(arguments).map(arg => {
+                        if (typeof arg === 'object' && arg !== null) {
+                            try { return JSON.stringify(arg, null, 2); } catch { return String(arg); }
+                        }
+                        return String(arg);
+                    }).join(' ');
+                    consoleOutput.textContent += outputMessage + '\n';
+                    originalLog.apply(console, arguments);
+                };
+
+                console.log = customLogger;
+                window.zog = customLogger;
+
+                new Frame("canvas-container", 1280, 720, yellow, black, function() {
+                    currentFrame = this;
+                    try {
+                        const userFunc = new Function(code);
+                        userFunc.call(this);
+                    } catch (error) {
+                        console.log('ZIM Execution Error: ' + error.message);
+                    }
+                });
+
+                setTimeout(() => { console.log = originalLog; window.zog = originalZog; }, 100);
+
+            } catch (error) {
+                consoleOutput.textContent += 'Parsing/Setup Error: ' + error.message + '\n';
+            }
+        }
+
+        /* SPLITTERS: unified main splitter (handles vertical/horizontal) */
+        function setupMainSplitter() {
+            const splitter = document.getElementById('splitter');
+            const editorPane = document.getElementById('editor-pane');
+            const mainLayout = document.getElementById('main-layout');
+            if (!splitter || !editorPane || !mainLayout) return;
+
+            let dragging = false;
+            let startX = 0, startY = 0, startWidth = 0, startHeight = 0;
+
+            splitter.addEventListener('mousedown', e => {
+                // only start when splitter is visible
+                if (splitter.style.display === 'none' || splitter.classList.contains('hidden-editor-pane')) return;
+                e.preventDefault();
+                dragging = true;
+                splitter.classList.add('dragging');
+
+                // capture starting dimensions
+                const rect = editorPane.getBoundingClientRect();
+                startWidth = rect.width;
+                startHeight = rect.height;
+                startX = e.clientX;
+                startY = e.clientY;
+
+                // set cursor immediately according to orientation
+                if (isVerticalLayout) {
+                    document.body.style.cursor = 'row-resize';
+                } else {
+                    document.body.style.cursor = 'col-resize';
+                }
+            });
+
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const editorHidden = editorPane.classList.contains('hidden-editor-pane');
+                if (editorHidden) return;
+
+                if (isVerticalLayout) {
+                    // adjust editor height (flex-basis)
+                    const dy = e.clientY - startY;
+                    const newHeight = Math.max(120, Math.min(startHeight + dy, window.innerHeight - 120));
+                    editorPane.style.flex = `0 0 ${newHeight}px`;
+                } else {
+                    // adjust editor width (flex-basis)
+                    const isReversed = mainLayout.classList.contains('main-layout-reversed');
+                    const dx = e.clientX - startX;
+                    const rawNewWidth = isReversed ? startWidth - dx : startWidth + dx;
+                    const clamped = Math.max(220, Math.min(rawNewWidth, window.innerWidth - 300));
+                    editorPane.style.flex = `0 0 ${clamped}px`;
+                }
+
+                if (codeEditor) codeEditor.refresh();
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (!dragging) return;
+                dragging = false;
+                splitter.classList.remove('dragging');
+                document.body.style.cursor = 'default';
+            });
+
+            // ensure splitter visibility according to initial state
+            const editorHidden = editorPane.classList.contains('hidden-editor-pane');
+            splitter.style.display = editorHidden ? 'none' : 'block';
+        }
+
+        /* ASSETS / CANVAS splitter (horizontal) */
+        function setupAssetsSplitter() {
+            const splitter = document.getElementById('canvas-splitter');
+            const assetsWrapper = document.getElementById('assets-wrapper');
+            if (!splitter || !assetsWrapper) return;
+
+            let dragging = false, startY = 0, startHeight = 0;
+            splitter.addEventListener('mousedown', e => {
+                if (splitter.style.display === 'none') return;
+                dragging = true;
+                startY = e.clientY;
+                startHeight = assetsWrapper.getBoundingClientRect().height;
+                splitter.classList.add('dragging');
+                document.body.style.cursor = 'row-resize';
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const dy = e.clientY - startY;
+                const newHeight = Math.max(80, startHeight + dy);
+                assetsWrapper.style.height = newHeight + 'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (!dragging) return;
+                dragging = false;
+                splitter.classList.remove('dragging');
+                document.body.style.cursor = 'default';
+            });
+        }
+
+        /* CodeMirror resizing corner behaviour */
+        function setupCodeEditorResizing() {
+            let dragging = false;
+            const el = document.getElementById('code-editor');
+            if (!el) return;
+            el.addEventListener('mousedown', function(e) {
+                const rect = el.getBoundingClientRect();
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) {
+                    e.preventDefault();
+                    dragging = true;
+                    document.body.style.cursor = 'se-resize';
+                }
+            });
+            document.addEventListener('mousemove', function(e) {
+                if (!dragging) return;
+                const rect = el.getBoundingClientRect();
+                const newHeight = Math.max(120, e.clientY - rect.top);
+                el.style.height = newHeight + 'px';
+                if (codeEditor) codeEditor.refresh();
+            });
+            document.addEventListener('mouseup', function() {
+                if (dragging) { dragging = false; document.body.style.cursor = 'default'; if (codeEditor) codeEditor.refresh(); }
+            });
+        }
+
+        /* Keep borders/corners correct */
+        function updatePaneBorders() {
+            const editorPane = document.getElementById('editor-pane');
+            const canvasPane = document.getElementById('canvas-pane');
+            const splitter = document.getElementById('splitter');
+            const isReversed = document.getElementById('main-layout').classList.contains('main-layout-reversed');
+            const isHidden = editorPane.classList.contains('hidden-editor-pane');
+
+            if (isHidden) {
+                canvasPane.style.borderRadius = '18px';
+                editorPane.style.borderRadius = '18px 0 0 18px';
+                splitter.style.display = 'none';
+                return;
+            }
+
+            splitter.style.display = 'block';
+            if (isVerticalLayout) {
+                editorPane.style.borderRadius = '18px 18px 0 0';
+                canvasPane.style.borderRadius = '0 0 18px 18px';
+                splitter.classList.remove('vertical');
+                splitter.classList.add('horizontal');
+                splitter.setAttribute('aria-orientation', 'horizontal');
+            } else if (isReversed) {
+                editorPane.style.borderRadius = '0 18px 18px 0';
+                canvasPane.style.borderRadius = '18px 0 0 18px';
+                splitter.classList.remove('horizontal');
+                splitter.classList.add('vertical');
+                splitter.setAttribute('aria-orientation', 'vertical');
+            } else {
+                editorPane.style.borderRadius = '18px 0 0 18px';
+                canvasPane.style.borderRadius = '0 18px 18px 0';
+                splitter.classList.remove('horizontal');
+                splitter.classList.add('vertical');
+                splitter.setAttribute('aria-orientation', 'vertical');
+            }
+        }
+
+        // Init on DOM ready
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
